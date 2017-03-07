@@ -1,4 +1,5 @@
 var Horn = (function($D){
+	var hornIDName = '_id';
 
 	newID = (function (){
 		var counter = 1;
@@ -54,7 +55,23 @@ var Horn = (function($D){
 		return itm;
 	}
 
+	function setIDs(itm){
+		if(itm instanceof Array){
+			itm[hornIDName] = newID();
+			for(var i; i<itm.length; i++){
+				setIDs(itm[i]);
+			}
+			for(var k in itm){setIDs(itm[k]);}
+		}
+		if(typeof(itm)=='object'){
+			itm[hornIDName] = newID();
+			for(var k in itm){setIDs(itm[k]);}
+		}
+	}
+
 	function Horn(data){
+		setIDs(data);
+		// console.log(data);
 		var changes = [];
 		return {
 			getData: function(){

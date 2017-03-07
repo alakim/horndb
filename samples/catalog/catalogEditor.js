@@ -16,7 +16,8 @@ var CatalogEditor = (function($, $H){
 			return div(
 				apply(db.getData().books, function(bk){
 					return div(
-						bk.author, ': ', bk.title
+						bk.author, ': ', bk.title, ':', 
+								span(button({'class':'btEdit', 'data-nodeID':bk._id}, 'Edit'))
 					);
 				}),
 				div(
@@ -40,6 +41,10 @@ var CatalogEditor = (function($, $H){
 				)
 			);
 		}})())
+		.find('.btEdit').click(function(){
+			var id = $(this).attr('data-nodeID');
+			console.log('receive: ',id);
+		}).end()
 		.find('.btAdd').click(function(){
 			$('.dlgAdd').show();
 		}).end()
