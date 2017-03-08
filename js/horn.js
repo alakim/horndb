@@ -36,9 +36,6 @@ var Horn = (function($D){
 			newID: function(){
 				while(index[idCounter]) idCounter++;
 				return idCounter++;
-			},
-			getByID: function(id){
-				return index[id];
 			}
 		};
 	}
@@ -54,30 +51,48 @@ var Horn = (function($D){
 		if(data[step]) return getItem(data[step], path.splice(1));
 	}
 
-	function appendAction(db, change){
-		var itm = getItem(db.getData(), change.path);
-		if(itm instanceof Array)
-			itm.push(change.item);
-		else 
-			console.error(itm, ' is not array');
+	function getByID(data, id){
+		if(data[hornIDName]==id) return data;
+		if(data instanceof Array){
+			for(var el,i=0; el=data[i],i<data.length; i++){
+				var itm = getByID(el, id);
+				if(itm) return itm;
+			}
+		}
+		else if(typeof(data)=='object'){
+			for(var k in data){
+				var itm = getByID(data[k], id);
+				if(itm) return itm;
+			}
+		}
 	}
 
-	function changeAction(data, change){
+	function appendAction(db, data, change){
+		var trg = getItem(data, change.path);
+		var itm = clone(change.item);
+		if(trg instanceof Array)
+			trg.push(itm);
+		else 
+			console.error(trg, ' is not array');
+	}
+
+	function changeAction(db, data, change){
 		// console.log(data, change);
-		var itm = data.identity.getByID(change.itemID);
+		var itm = getByID(data, change.itemID);
 		if(!itm) console.error('item #'+change.itemID+' does not exist');
 		for(var k in change.itemData){
 			itm[k] = change.itemData[k];
 		}
 	}
 
-	function applyChange(data, change){
+	function applyChange(db, data, change){
+		// console.log('db: %o', db);
 		switch(change.type){
 			case 'change':
-				changeAction(data, change);
+				changeAction(db, data, change);
 				break;
 			case 'append':
-				appendAction(data, change);
+				appendAction(db, data, change);
 				break;
 			default:
 				break;
@@ -121,24 +136,28 @@ var Horn = (function($D){
 				});
 			},
 			append: function(path, item){
+				item[hornIDName] = this.identity.newID();
 				changes.push({
 					type:'append',
 					path: path,
 					item: item
 				});
 			},
-			applyChanges: function(){
-				var dd = Horn(clone(data));
+			applyChanges: function(){var self=this;
+				console.log('applyChanges: %o', changes);
+				var dd = clone(data);
 				$D.each(changes, function(chg){
-					applyChange(dd, chg);
+					applyChange(self, dd, chg);
 				});
 				console.log('Было: %o, стало: %o', data, dd);
 				return dd;
-			}
+			},
+			getChanges: function(){return changes;}
 		};
 	}
 
 	$D.extend(Horn, {
+		getByID: getByID
 	});
 
 	return Horn;

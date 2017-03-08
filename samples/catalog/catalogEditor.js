@@ -9,13 +9,13 @@ var CatalogEditor = (function($, $H){
 		}
 	});
 
-	var db = {getData: function(){return {books:[]};}};
+	var db; //= {getData: function(){return {books:[]};}};
 
-	function displayData(db){
+	function displayData(data){
 		var itemID = null;
 		$('#pnlEditor').html((function(){with($H){
 			return div(
-				apply(db.getData().books, function(bk){
+				apply(data.books, function(bk){
 					return div(
 						bk.author, ': ', bk.title, ':', 
 								span(button({'class':'btEdit', 'data-nodeID':bk._id}, 'Edit'))
@@ -47,7 +47,7 @@ var CatalogEditor = (function($, $H){
 		}})())
 		.find('.btEdit').click(function(){
 			itemID = $(this).attr('data-nodeID');
-			var item = db.identity.getByID(itemID);
+			var item = Horn.getByID(data, itemID);
 			if(!item) console.error('Item #'+itemID+' does not exist');
 			$('.dlgAdd .tbTitle').val(item.title);
 			$('.dlgAdd .tbAuthor').val(item.author);
@@ -75,8 +75,15 @@ var CatalogEditor = (function($, $H){
 	}
 
 	function init(){
-		displayData(Horn(catalogData));
+		db = Horn(catalogData);
+		displayData(db.getData());
 	}
 
 	$(init);
+
+	return {
+		showChanges: function(){
+			console.log('changes: %o', db.getChanges());
+		}
+	};
 })(jQuery, Html.version('4.1.0'));
