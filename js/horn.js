@@ -1,12 +1,48 @@
 var Horn = (function($D){
 	var hornIDName = '_id';
 
-	newID = (function (){
-		var counter = 1;
-		return function(){
-			return counter++;
+	function Identity(data){
+		var index = {};
+
+		function indexItem(itm){
+			if(itm[hornIDName]) index[itm[hornIDName]] = itm;
+			
+			if(itm instanceof Array)
+				for(var i; i<itm.length; i++){indexItem(itm[i]);}
+			if(typeof(itm)=='object')
+				for(var k in itm){indexItem(itm[k]);}
 		}
-	})();
+		indexItem(data);
+
+		var idCounter = 1;
+
+		function newID(){
+			while(index[idCounter]) idCounter++;
+			return idCounter++;
+		}
+
+		function setID(itm){
+			if(!itm[hornIDName]) itm[hornIDName] = newID();
+			index[itm[hornIDName]] = itm;
+			
+			if(itm instanceof Array)
+				for(var i; i<itm.length; i++){setID(itm[i]);}
+			if(typeof(itm)=='object')
+				for(var k in itm){setID(itm[k]);}
+		}
+		setID(data);
+
+		return {
+			newID: function(){
+				while(index[idCounter]) idCounter++;
+				return idCounter++;
+			},
+			getByID: function(id){
+				return index[id];
+			}
+		};
+	}
+
 
 	function getItem(data, path){
 		// console.log(1, path);
@@ -18,18 +54,30 @@ var Horn = (function($D){
 		if(data[step]) return getItem(data[step], path.splice(1));
 	}
 
-	function append(data, change){
-		var itm = getItem(data, change.path);
+	function appendAction(db, change){
+		var itm = getItem(db.getData(), change.path);
 		if(itm instanceof Array)
 			itm.push(change.item);
 		else 
 			console.error(itm, ' is not array');
 	}
 
+	function changeAction(data, change){
+		// console.log(data, change);
+		var itm = data.identity.getByID(change.itemID);
+		if(!itm) console.error('item #'+change.itemID+' does not exist');
+		for(var k in change.itemData){
+			itm[k] = change.itemData[k];
+		}
+	}
+
 	function applyChange(data, change){
 		switch(change.type){
+			case 'change':
+				changeAction(data, change);
+				break;
 			case 'append':
-				append(data, change);
+				appendAction(data, change);
 				break;
 			default:
 				break;
@@ -55,27 +103,22 @@ var Horn = (function($D){
 		return itm;
 	}
 
-	function setIDs(itm){
-		if(itm instanceof Array){
-			itm[hornIDName] = newID();
-			for(var i; i<itm.length; i++){
-				setIDs(itm[i]);
-			}
-			for(var k in itm){setIDs(itm[k]);}
-		}
-		if(typeof(itm)=='object'){
-			itm[hornIDName] = newID();
-			for(var k in itm){setIDs(itm[k]);}
-		}
-	}
 
 	function Horn(data){
-		setIDs(data);
+		var identity = Identity(data);
 		// console.log(data);
 		var changes = [];
 		return {
+			identity: identity,
 			getData: function(){
 				return data;
+			},
+			change: function(itemID, itemData){
+				changes.push({
+					type:'change',
+					itemID: itemID,
+					itemData: itemData
+				});
 			},
 			append: function(path, item){
 				changes.push({
@@ -85,12 +128,12 @@ var Horn = (function($D){
 				});
 			},
 			applyChanges: function(){
-				var dd = clone(data);
+				var dd = Horn(clone(data));
 				$D.each(changes, function(chg){
 					applyChange(dd, chg);
 				});
 				console.log('Было: %o, стало: %o', data, dd);
-				return Horn(dd);
+				return dd;
 			}
 		};
 	}

@@ -12,6 +12,7 @@ var CatalogEditor = (function($, $H){
 	var db = {getData: function(){return {books:[]};}};
 
 	function displayData(db){
+		var itemID = null;
 		$('#pnlEditor').html((function(){with($H){
 			return div(
 				apply(db.getData().books, function(bk){
@@ -21,31 +22,41 @@ var CatalogEditor = (function($, $H){
 					);
 				}),
 				div(
-					button({'class':'btAdd'}, 'Add'),
-					div({'class':'dialogPanel dlgAdd', style:'display:none'},
-						table(
-							tr(
-								td('Title'),
-								td(input({type:'text', 'class':'tbTitle'}))
-							),
-							tr(
-								td('Author'),
-								td(input({type:'text', 'class':'tbAuthor'}))
-							)
+					button({'class':'btAdd'}, 'Add')
+				),
+				div({'class':'dialogPanel dlgAdd', style:'display:none'},
+					table(
+						tr(
+							td('Title'),
+							td(input({type:'text', 'class':'tbTitle'}))
 						),
-						div(
-							button({'class':'btOK'}, 'OK'),
-							button({'class':'btCancel'}, 'Cancel')
+						tr(
+							td('Author'),
+							td(input({type:'text', 'class':'tbAuthor'}))
 						)
+					),
+					div(
+						button({'class':'btOK'}, 'OK'),
+						button({'class':'btCancel'}, 'Cancel')
 					)
+				),
+				div({'class':'dialogPanel dlgEdit', style:'display:none'},
+					'ssss'
 				)
 			);
 		}})())
 		.find('.btEdit').click(function(){
-			var id = $(this).attr('data-nodeID');
-			console.log('receive: ',id);
+			itemID = $(this).attr('data-nodeID');
+			var item = db.identity.getByID(itemID);
+			if(!item) console.error('Item #'+itemID+' does not exist');
+			$('.dlgAdd .tbTitle').val(item.title);
+			$('.dlgAdd .tbAuthor').val(item.author);
+			$('.dlgAdd').show();
 		}).end()
 		.find('.btAdd').click(function(){
+			itemID = null;
+			$('.dlgAdd .tbTitle').val('');
+			$('.dlgAdd .tbAuthor').val('');
 			$('.dlgAdd').show();
 		}).end()
 		.find('.dlgAdd .btCancel').click(function(){
@@ -54,7 +65,10 @@ var CatalogEditor = (function($, $H){
 		.find('.dlgAdd .btOK').click(function(){
 			var title = $('.dlgAdd .tbTitle').val(),
 				author = $('.dlgAdd .tbAuthor').val();
-			db.append('/books/', {title:title, author:author});
+			if(itemID!=null)
+				db.change(itemID, {title:title, author:author});
+			else
+				db.append('/books/', {title:title, author:author});
 			displayData(db.applyChanges());
 			$('.dlgAdd').hide();
 		}).end();
