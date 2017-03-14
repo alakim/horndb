@@ -18,7 +18,8 @@ var CatalogEditor = (function($, $H){
 				apply(data.books, function(bk){
 					return div(
 						bk.author, ': ', bk.title, ':', 
-								span(button({'class':'btEdit', 'data-nodeID':bk._id}, 'Edit'))
+								span(button({'class':'btEdit', 'data-nodeID':bk._id}, 'Edit')),
+								span(button({'class':'btDel', 'data-nodeID':bk._id, style:'color:#f00'}, 'Delete'))
 					);
 				}),
 				div(
@@ -45,6 +46,13 @@ var CatalogEditor = (function($, $H){
 				)
 			);
 		}})())
+		.find('.btDel').click(function(){
+			itemID = $(this).attr('data-nodeID');
+			var item = Horn.getByID(data, itemID);
+			if(!item) console.error('Item #'+itemID+' does not exist');
+			db.delete(itemID);
+			displayData(db.applyChanges());
+		}).end()
 		.find('.btEdit').click(function(){
 			itemID = $(this).attr('data-nodeID');
 			var item = Horn.getByID(data, itemID);

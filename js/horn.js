@@ -135,6 +135,9 @@ var Horn = (function($D){
 					itemData: itemData
 				});
 			},
+			delete: function(itemID){
+				console.log('delete "%s"', itemID);
+			},
 			append: function(path, item){
 				item[hornIDName] = this.identity.newID();
 				changes.push({
